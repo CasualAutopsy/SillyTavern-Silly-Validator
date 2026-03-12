@@ -1,12 +1,12 @@
 {
-    "display_name": "Template Extension",
+    "display_name": "Silly Validator",
     "loading_order": 1,
     "requires": [],
     "optional": [],
     "js": "dist/index.js",
     "css": "",
-    "author": "Cohee1207",
+    "author": "CasualAutopsy",
     "version": "1.0.0",
-    "homePage": "https://github.com/Cohee1207/Extension-ReactTemplate",
+    "homePage": "https://github.com/CasualAutopsy/SillyTavern-Silly-Validator",
     "auto_update": true
 }
