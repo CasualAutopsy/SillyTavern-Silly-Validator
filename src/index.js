@@ -1,5 +1,7 @@
 import Ajv from "ajv";
 
+const ajv = new Ajv();
+
 async function importFromUrl(url, what, defaultValue = null) {
     try {
         const module = await import(/* webpackIgnore: true */ url);
@@ -13,34 +15,66 @@ async function importFromUrl(url, what, defaultValue = null) {
     }
 }
 
-const SlashCommandParser = await importFromUrl('/scripts/slash-commands/SlashCommandParser.js', 'SlashCommandParser');
+// Util imports
+const isTrueBoolean = await importFromUrl('/scripts/utils.js', 'isTrueBoolean');
 
+// Slash command related imports
+const SlashCommandParser = await importFromUrl('/scripts/slash-commands/SlashCommandParser.js', 'SlashCommandParser');
 const SlashCommand = await importFromUrl('/scripts/slash-commands/SlashCommand.js', 'SlashCommand');
 
-const ARGUMENT_TYPE = await importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'ARGUMENT_TYPE');
-const SlashCommandArgument = await importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandArgument');
-const SlashCommandNamedArgument = await importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandNamedArgument');
+// Argument related imports
+const [ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument] = await Promise.all([
+    importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'ARGUMENT_TYPE'),
+    importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandArgument'),
+    importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandNamedArgument'),
+]);
 
-const ajv = new Ajv();
+/**
+ * Parses a value string into its appropriate JavaScript type.
+ * Attempts JSON parsing first, then numeric conversion, then boolean strings.
+ * @param {string} value - The value string to parse
+ * @returns {*} - The parsed value in its appropriate type
+ */
+function parseValue(value) {
+    // Try JSON parsing first (handles objects, arrays, numbers, booleans, null)
+    try {
+        return JSON.parse(value);
+    } catch {
+        // Try numeric conversion for plain numbers
+        const numericValue = parseFloat(value);
+        if (!isNaN(numericValue)) {
+            return numericValue;
+        }
+        // Handle boolean strings
+        if (value === 'true' || value === 'false') {
+            return isTrueBoolean(value);
+        }
+        // Return as string if no other conversion succeeds
+        return value;
+    }
+}
 
+/**
+ * Validates a value against a JSON schema using Ajv.
+ * Handles both pre-parsed and string-formatted schemas/values.
+ * @param {Object} args - Arguments containing the schema
+ * @param {string|Object} value - Value to validate (string or parsed value)
+ * @returns {boolean} - Whether the value passes validation
+ */
 async function validateVar(args, value) {
-    let schema;
-    let val;
+    // Parse schema: try JSON first, fallback to object if already parsed
+    const schema = typeof args.schema === 'string'
+        ? JSON.parse(args.schema)
+        : args.schema;
 
-    try {
-        schema = JSON.parse(args.schema);
-    } catch {
-        schema = args.schema;
-    }
+    // Parse value using helper function for flexible input formats
+    const val = parseValue(value);
 
-    try {
-        val = JSON.parse(value);
-    } catch {
-        val = value;
-    }
-
+    // Validate schema before attempting validation
     const schemaCheck = ajv.validateSchema(schema);
-    if (!schemaCheck) { throw new Error(`Invalid schema: ${schema}`); }
+    if (!schemaCheck) {
+        throw new Error('Invalid schema provided');
+    }
 
     return ajv.validate(schema, val);
 }
