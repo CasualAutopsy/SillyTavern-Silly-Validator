@@ -2,28 +2,38 @@ import Ajv from "ajv";
 
 const ajv = new Ajv();
 
-async function importFromUrl(url, what, defaultValue = null) {
+/**
+ * Dynamically imports a module and extracts a specific export.
+ * @param {string} url - The module URL to import
+ * @param {string} exportName - The named export to extract
+ * @param {*} defaultValue - Value to return on failure
+ * @returns {Promise<*>} - The exported value or default
+ */
+async function importFromUrl(url, exportName, defaultValue = null) {
     try {
         const module = await import(/* webpackIgnore: true */ url);
-        if (!Object.hasOwn(module, what)) {
-            throw new Error(`No ${what} in module`);
+        if (!Object.hasOwn(module, exportName)) {
+            throw new Error(`No ${exportName} in module`);
         }
-        return module[what];
+        return module[exportName];
     } catch (error) {
-        console.error(`Failed to import ${what} from ${url}: ${error}`);
+        console.error(`Failed to import ${exportName} from ${url}: ${error}`);
         return defaultValue;
     }
 }
 
-// Util imports
-const isTrueBoolean = await importFromUrl('/scripts/utils.js', 'isTrueBoolean');
-
-// Slash command related imports
-const SlashCommandParser = await importFromUrl('/scripts/slash-commands/SlashCommandParser.js', 'SlashCommandParser');
-const SlashCommand = await importFromUrl('/scripts/slash-commands/SlashCommand.js', 'SlashCommand');
-
-// Argument related imports
-const [ARGUMENT_TYPE, SlashCommandArgument, SlashCommandNamedArgument] = await Promise.all([
+// Consolidated dynamic imports - all load in parallel
+const [
+    isTrueBoolean,
+    SlashCommandParser,
+    SlashCommand,
+    ARGUMENT_TYPE,
+    SlashCommandArgument,
+    SlashCommandNamedArgument
+] = await Promise.all([
+    importFromUrl('/scripts/utils.js', 'isTrueBoolean'),
+    importFromUrl('/scripts/slash-commands/SlashCommandParser.js', 'SlashCommandParser'),
+    importFromUrl('/scripts/slash-commands/SlashCommand.js', 'SlashCommand'),
     importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'ARGUMENT_TYPE'),
     importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandArgument'),
     importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandNamedArgument'),
