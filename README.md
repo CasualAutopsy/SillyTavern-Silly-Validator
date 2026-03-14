@@ -1,15 +1,13 @@
-# Extension-ReactTemplate
-Template repository for SillyTavern extensions using React and Webpack.
+# Silly Validator
+Validate variables in SillyTavern using JSON Schemas!
 
-## How to use
+## Installation
+1. Open the extension menu and click `Install extension`
+2. Paste in the following link:
+```
+https://github.com/CasualAutopsy/SillyTavern-Silly-Validator
+```
+3. Click `Install just for me`
 
-1. Click "Use this template" on the GitHub page.
-2. Create a new repository and clone it to your local machine.
-3. Open the repository in your code editor and run `npm install`.
-4. Edit the `manifest.json` file.
-5. Write the source code in `src` directory.
-6. When you're ready to test - run `npm run build`.
-7. Minimized bundle will appear in `dist`, ready to be plugged into SillyTavern.
-
-> [!TIP]
-> If you want to test your extension live, clone the repo into the `/public/scripts/extensions/third-party` of your SillyTavern installation.
+## Command
+The following command and alias will be added: `/silly-validator` / `/st-validate`
