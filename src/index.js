@@ -77,16 +77,12 @@ async function validateVar(args, value) {
         ? JSON.parse(args.schema)
         : args.schema;
 
-    // Parse value using helper function for flexible input formats
-    const val = parseValue(value);
-
     // Validate schema before attempting validation
-    const schemaCheck = ajv.validateSchema(schema);
-    if (!schemaCheck) {
+    if (!ajv.validateSchema(schema)) {
         throw new Error('Invalid schema provided');
     }
 
-    return ajv.validate(schema, val);
+    return ajv.validate(schema, parseValue(value));
 }
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
