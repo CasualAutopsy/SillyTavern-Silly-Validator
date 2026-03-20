@@ -77,12 +77,20 @@ async function validateVar(args, value) {
         ? JSON.parse(args.schema)
         : args.schema;
 
+    return ajv.validate(schema, parseValue(value));
+}
+
+async function validateJSON(_, value) {
+    const schema = typeof value === 'string'
+        ? JSON.parse(value)
+        : value;
+
     // Validate schema before attempting validation
     if (!ajv.validateSchema(schema)) {
         throw new Error('Invalid schema provided');
     }
 
-    return ajv.validate(schema, parseValue(value));
+    return true;
 }
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -127,5 +135,20 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         </ul>
     </div>
     `,
+    returns: 'boolean'
+}));
+
+SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+    name: "silly-schema-validate",
+    callback: validateJSON,
+    unnamedArgumentList: [
+        SlashCommandArgument.fromProps({
+            description: "schema to use for validation",
+            typeList: [ARGUMENT_TYPE.DICTIONARY],
+            isRequired: true,
+            acceptsMultiple: false,
+        }),
+    ],
+    splitUnnamedArgument: false,
     returns: 'boolean'
 }));
