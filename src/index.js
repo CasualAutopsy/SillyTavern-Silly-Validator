@@ -39,6 +39,18 @@ const [
     importFromUrl('/scripts/slash-commands/SlashCommandArgument.js', 'SlashCommandNamedArgument'),
 ]);
 
+const objBoolOrThrow = {
+    bool: (valid) => {
+        return valid;
+    },
+    throw: (valid) => {
+        if (!valid) {
+            throw new TypeError('Validation Error!');
+        }
+        return valid;
+    },
+};
+
 /**
  * Parses a value string into its appropriate JavaScript type.
  * Attempts JSON parsing first, then numeric conversion, then boolean strings.
@@ -77,20 +89,17 @@ async function validateVar(args, value) {
         ? JSON.parse(args.schema)
         : args.schema;
 
-    return ajv.validate(schema, parseValue(value));
+
+    return objBoolOrThrow[args.throw ? 'throw' : 'bool'](ajv.validate(schema, parseValue(value)));
 }
 
-async function validateJSON(_, value) {
+async function validateJSON(args, value) {
     const schema = typeof value === 'string'
         ? JSON.parse(value)
         : value;
 
     // Validate schema before attempting validation
-    if (!ajv.validateSchema(schema)) {
-        throw new Error('Invalid schema provided');
-    }
-
-    return true;
+    return ajv.validateSchema(schema, args.throw ? true : false)
 }
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
@@ -104,6 +113,11 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
             typeList: [ARGUMENT_TYPE.DICTIONARY],
             isRequired: true,
             acceptsMultiple: false,
+        }),
+        SlashCommandNamedArgument.fromProps({
+            name: "throw",
+            description: "Whether to throw an error on validation failure",
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
         }),
     ],
     unnamedArgumentList: [
@@ -139,8 +153,15 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
 }));
 
 SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-    name: "silly-schema-validate",
+    name: "silly-validate-schema",
     callback: validateJSON,
+    namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+            name: "throw",
+            description: "Whether to throw an error on validation failure",
+            typeList: [ARGUMENT_TYPE.BOOLEAN],
+        }),
+    ],
     unnamedArgumentList: [
         SlashCommandArgument.fromProps({
             description: "schema to use for validation",
@@ -150,5 +171,19 @@ SlashCommandParser.addCommandObject(SlashCommand.fromProps({
         }),
     ],
     splitUnnamedArgument: false,
+    helpString: /*html*/`
+    <div>
+        Validate a JSON schema using Ajv.
+        <br/>Returns true if the schema is valid, false otherwise.
+    </div>
+    <div>
+        <ul>
+            <li><pre><code class="language-stscript">// With silly-validate-schema you can validate JSON schemas to make sure they are structurally correct. |
+
+/silly-validate-schema { "type": "string" } |
+/echo {{pipe}}</code></pre></li>
+        </ul>
+    </div>
+    `,
     returns: 'boolean'
 }));
